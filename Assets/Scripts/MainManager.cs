@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -12,9 +13,11 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
+    public Text bestScoreText;
     
     private bool m_Started = false;
     private int m_Points;
+    private string currentPlayer;
     
     private bool m_GameOver = false;
 
@@ -22,6 +25,12 @@ public class MainManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        currentPlayer = Score.Instance.playerName;
+
+        LoadBestScore();
+
+        bestScoreText.text = "Best Score: " + Score.Instance.playerName + ": " + Score.Instance.bestScore;
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -72,5 +81,36 @@ public class MainManager : MonoBehaviour
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+        if (m_Points >= Score.Instance.bestScore)
+        {
+            SaveBestScore();
+        }
+    }
+
+    void SaveBestScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+
+        Score.BestScore bestScore = new Score.BestScore();
+        bestScore.playerName = currentPlayer;
+        bestScore.bestScore = m_Points;
+
+        string json = JsonUtility.ToJson(bestScore);
+
+        File.WriteAllText(path, json);
+    }
+
+    public void LoadBestScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            Score.BestScore bestScore = JsonUtility.FromJson<Score.BestScore>(json);
+
+            Score.Instance.playerName = bestScore.playerName;
+            Score.Instance.bestScore = bestScore.bestScore;
+        }
     }
 }
